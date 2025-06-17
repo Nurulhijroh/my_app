@@ -37,9 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _updateCurrentTime();
       _calculateNextPrayer();
     });
-
-    TODO:
-    _calculateNextPrayer();
   }
 
   @override
@@ -53,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _currentTime = DateFormat('HH:mm:ss').format(now);
       _currentGregorianDate = DateFormat(
-        'EEE, d MMMM YYYY',
+        'EEEE, d MMMM yyyy',
         'id_ID',
       ).format(now);
       _currentHijriDate = 'Loading Hijri Date...';
@@ -105,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (nextPrayerDateTime != null) {
       _timeUntilNextPrayer = nextPrayerDateTime.difference(now);
       _nextPrayerName = nextPrayerName;
-      _nextPrayerTime = DateFormat('HH:mm').format(nextPrayerDateTime);
+      _nextPrayerTime = DateFormat('HH:mm:').format(nextPrayerDateTime);
     } else {
       _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
       _nextPrayerTime = '--:--';
@@ -114,45 +111,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  //TODO :
-  // Future<void> _fetchPrayerTimesFromApi() async {
-  //   // Contoh URL (perlu disesuaikan dengan koordinat atau kota asramamu)
-  //   // final String apiUrl = 'https://api.aladhan.com/v1/timingsByCity/15-06-2025?city=Jakarta&country=Indonesia&method=11'; // method 11 = Kemenag RI
-  //   // final response = await http.get(Uri.parse(apiUrl));
-  //   // if (response.statusCode == 200) {
-  //   //   final data = jsonDecode(response.body);
-  //   //   setState(() {
-  //   //     _prayerTimes = Map<String, String>.from(data['data']['timings']);
-  //   //     _calculateNextPrayer(); // Hitung ulang setelah data API didapat
-  //   //   });
-  //   // } else {
-  //   //   // Handle error
-  //   //   print('Failed to load prayer times: ${response.statusCode}');
-  //   // }
-  // }
-
-  // TODO: Fungsi untuk mengambil tanggal Hijriyah dari Aladhan API (akan diimplementasikan nanti)
-  // Future<void> _fetchHijriDateFromApi() async {
-  //   // final String apiUrl = 'https://api.aladhan.com/v1/gregorianToHijri?date=${DateFormat('dd-MM-yyyy').format(DateTime.now())}';
-  //   // final response = await http.get(Uri.parse(apiUrl));
-  //   // if (response.statusCode == 200) {
-  //   //   final data = jsonDecode(response.body);
-  //   //   setState(() {
-  //   //     final hijri = data['data']['hijri'];
-  //   //     _currentHijriDate = '${hijri['day']} ${hijri['month']['en']} ${hijri['year']} H';
-  //   //   });
-  //   // } else {
-  //   //   print('Failed to load Hijri date: ${response.statusCode}');
-  //   // }
-  // }
-
   @override
   Widget build(BuildContext context) {
-    // TODO: implement ==
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Digital Falak KW hehe',
+          'Digital Falak ',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
