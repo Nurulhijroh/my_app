@@ -4,9 +4,38 @@ import 'package:my_app/screens/home_screen.dart';
 import 'package:my_app/screens/settings_screen.dart';
 import 'package:my_app/screens/daily_prayer_times_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+Future<void> _configureLocalNotifications() async {
+  tz.initializeTimeZones();
+  final String? timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timeZoneName!));
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_laucher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveBackgroundNotificationResponse: (
+      NotificationResponse notificationRespone,
+    ) async {
+      debugPrint('Notification payload: ${notificationRespone.payload}');
+    },
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _configureLocalNotifications();
   await initializeDateFormatting('id_ID', null);
   runApp(const MyApp());
 }

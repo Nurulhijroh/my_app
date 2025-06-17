@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http; // Import untuk API
-import 'dart:convert'; // Import untuk JSON
-import 'package:geolocator/geolocator.dart'; // Import geolocator
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:my_app/main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,18 +17,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _currentGregorianDate = '';
-  // String _currentHijriDate = ''; // Kita hapus ini karena sudah ada di daily_prayer_times_screen
+
   String _currentTime = '';
-  String _nextPrayerName = 'Tidak Ada Sholat Berikutnya'; // Default awal
+  String _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
   String _nextPrayerTime = '--:--';
   Duration _timeUntilNextPrayer = Duration.zero;
 
-  // Data waktu sholat dari API, bukan hardcode lagi
   Map<String, String> _apiPrayerTimes = {};
-  bool _isLoadingPrayerTimes = true; // Status loading untuk waktu sholat
-  String _prayerTimesErrorMessage = ''; // Error message untuk waktu sholat
-
-  // String untuk lokasi, sama seperti di DailyPrayerTimesScreen
+  bool _isLoadingPrayerTimes = true;
+  String _prayerTimesErrorMessage = '';
   String _currentLocationString = 'Mendeteksi lokasi...';
 
   Timer? _timer;
@@ -33,11 +33,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _updateCurrentTime(); // Mulai update waktu real-time
-    _fetchPrayerTimesFromApi(); // <<< Panggil fungsi untuk ambil data API
+    _updateCurrentTime();
+    _fetchPrayerTimesFromApi();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateCurrentTime();
-      _calculateNextPrayer(); // Akan menggunakan _apiPrayerTimes
+      _calculateNextPrayer();
     });
   }
 
@@ -52,14 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _currentTime = DateFormat('HH:mm:ss').format(now);
       _currentGregorianDate = DateFormat(
-        'EEEE, d MMMM yyyy', // Pastikan format tahun ada
+        'EEEE, d MMMM yyyy',
         'id_ID',
       ).format(now);
-      // _currentHijriDate = ''; // Baris ini sudah dihapus di PR sebelumnya
     });
   }
 
-  // Fungsi untuk mendapatkan lokasi pengguna (sama persis dengan DailyPrayerTimesScreen)
   Future<Position?> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -116,23 +114,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Fungsi untuk mengambil waktu sholat dari API
   Future<void> _fetchPrayerTimesFromApi() async {
     setState(() {
       _isLoadingPrayerTimes = true;
       _prayerTimesErrorMessage = '';
-      _apiPrayerTimes = {}; // Bersihkan data sebelumnya
+      _apiPrayerTimes = {};
     });
 
     Position? position = await _getCurrentLocation();
     if (position == null) {
-      // Error message sudah diset oleh _getCurrentLocation
       return;
     }
 
     final double latitude = position.latitude;
     final double longitude = position.longitude;
-    final String method = '5'; // Method calculation (e.g., Kemenag RI)
+    final String method = '5';
     final String date = DateFormat('dd-MM-yyyy').format(DateTime.now());
 
     final url = Uri.parse(
@@ -148,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _apiPrayerTimes = Map<String, String>.from(data['data']['timings']);
             _isLoadingPrayerTimes = false;
-            _calculateNextPrayer(); // Hitung ulang setelah data baru didapat
+            _calculateNextPrayer();
           });
         } else {
           setState(() {
@@ -172,7 +168,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Modifikasi fungsi _calculateNextPrayer untuk menggunakan _apiPrayerTimes
   void _calculateNextPrayer() {
     if (_apiPrayerTimes.isEmpty) {
       setState(() {
@@ -187,7 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
     DateTime? nextPrayerDateTime;
     String nextPrayerName = 'Tidak Ada Sholat Berikutnya';
 
-    // Urutan sholat (pastikan sesuai dengan kunci di API, biasanya Huruf Besar)
     final List<String> prayerOrder = [
       'Fajr',
       'Sunrise',
@@ -195,19 +189,13 @@ class _HomeScreenState extends State<HomeScreen> {
       'Asr',
       'Maghrib',
       'Isha',
-      // 'Imsak', // Imsak dan Midnight tidak selalu dianggap sholat berikutnya
-      // 'Midnight',
     ];
 
-    Duration shortestDuration = Duration(
-      days: 365,
-    ); // Inisialisasi dengan durasi sangat panjang
-
+    Duration shortestDuration = Duration(days: 365);
     for (var prayer in prayerOrder) {
       if (_apiPrayerTimes.containsKey(prayer)) {
         final timeString = _apiPrayerTimes[prayer]!;
 
-        // Aladhan API kadang menyertakan (IST) atau timezone lain. Kita pisahkan.
         String cleanedTimeString = timeString.split(' ')[0];
         final cleanedParts = cleanedTimeString.split(':');
 
@@ -224,7 +212,6 @@ class _HomeScreenState extends State<HomeScreen> {
               minute,
             );
 
-            // Jika waktu sholat sudah lewat hari ini, cek untuk besok
             if (prayerTime.isBefore(now)) {
               prayerTime = prayerTime.add(const Duration(days: 1));
             }
@@ -234,9 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (!duration.isNegative && duration < shortestDuration) {
               shortestDuration = duration;
               nextPrayerDateTime = prayerTime;
-              nextPrayerName = _getIndonesianPrayerName(
-                prayer,
-              ); // Terjemahkan nama sholat
+              nextPrayerName = _getIndonesianPrayerName(prayer);
             }
           }
         }
@@ -247,12 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (nextPrayerDateTime != null) {
         _timeUntilNextPrayer = shortestDuration;
         _nextPrayerName = nextPrayerName;
-        _nextPrayerTime = DateFormat(
-          'HH:mm',
-        ).format(nextPrayerDateTime); // Format tanpa detik
+        _nextPrayerTime = DateFormat('HH:mm').format(nextPrayerDateTime);
       } else {
-        // Ini akan terjadi jika semua sholat hari ini sudah lewat dan tidak ada untuk besok (jarang)
-        // atau jika data API tidak valid.
         _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
         _nextPrayerTime = '--:--';
         _timeUntilNextPrayer = Duration.zero;
@@ -260,7 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Fungsi pembantu untuk terjemahan nama sholat
   String _getIndonesianPrayerName(String englishName) {
     switch (englishName) {
       case 'Fajr':
@@ -302,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Icon(Icons.location_on, color: Colors.white),
                 Text(
-                  _currentLocationString, // Menampilkan lokasi dari state
+                  _currentLocationString,
                   style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ],
@@ -312,9 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body:
           _isLoadingPrayerTimes && _apiPrayerTimes.isEmpty
-              ? const Center(
-                child: CircularProgressIndicator(),
-              ) // Tampilkan loading spinner
+              ? const Center(child: CircularProgressIndicator())
               : _prayerTimesErrorMessage.isNotEmpty
               ? Center(
                 child: Padding(
@@ -351,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _currentGregorianDate,
                       style: TextStyle(fontSize: 18, color: Colors.grey[700]),
                     ),
-                    // _currentHijriDate tidak lagi ditampilkan di sini
+
                     const SizedBox(height: 20),
                     Text(
                       _currentTime,
@@ -407,7 +385,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            // Format waktu tersisa
                             'Tersisa ${NumberFormat('00').format(_timeUntilNextPrayer.inHours % 24)}:'
                             '${NumberFormat('00').format(_timeUntilNextPrayer.inMinutes % 60)}:'
                             '${NumberFormat('00').format(_timeUntilNextPrayer.inSeconds % 60)}',
@@ -433,10 +410,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-                    // Tampilkan daftar waktu sholat dari API
-                    ..._buildPrayerTimeList(
-                      _apiPrayerTimes,
-                    ), // Menggunakan _apiPrayerTimes
+
+                    ..._buildPrayerTimeList(_apiPrayerTimes),
 
                     const SizedBox(height: 20),
                   ],
