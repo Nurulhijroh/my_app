@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http; // Import untuk API
+import 'dart:convert'; // Import untuk JSON
+import 'package:geolocator/geolocator.dart'; // Import geolocator
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,31 +14,30 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _currentGregorianDate = '';
-  String _currentHijriDate = '';
+  // String _currentHijriDate = ''; // Kita hapus ini karena sudah ada di daily_prayer_times_screen
   String _currentTime = '';
-  String _nextPrayerName = 'Loading...';
+  String _nextPrayerName = 'Tidak Ada Sholat Berikutnya'; // Default awal
   String _nextPrayerTime = '--:--';
   Duration _timeUntilNextPrayer = Duration.zero;
 
-  final Map<String, String> _prayerTimes = {
-    'Fajar': '04:45',
-    'sunrise': '06:05',
-    'duhur': '12:00',
-    'ashar': '14:47',
-    'Magrib': '17:19',
-    'isya': '18:30',
-    'subuh': '04:50',
-  };
+  // Data waktu sholat dari API, bukan hardcode lagi
+  Map<String, String> _apiPrayerTimes = {};
+  bool _isLoadingPrayerTimes = true; // Status loading untuk waktu sholat
+  String _prayerTimesErrorMessage = ''; // Error message untuk waktu sholat
+
+  // String untuk lokasi, sama seperti di DailyPrayerTimesScreen
+  String _currentLocationString = 'Mendeteksi lokasi...';
 
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _updateCurrentTime();
+    _updateCurrentTime(); // Mulai update waktu real-time
+    _fetchPrayerTimesFromApi(); // <<< Panggil fungsi untuk ambil data API
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateCurrentTime();
-      _calculateNextPrayer();
+      _calculateNextPrayer(); // Akan menggunakan _apiPrayerTimes
     });
   }
 
@@ -50,38 +52,171 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _currentTime = DateFormat('HH:mm:ss').format(now);
       _currentGregorianDate = DateFormat(
-        'EEEE, d MMMM yyyy',
+        'EEEE, d MMMM yyyy', // Pastikan format tahun ada
         'id_ID',
       ).format(now);
-      _currentHijriDate = 'Loading Hijri Date...';
+      // _currentHijriDate = ''; // Baris ini sudah dihapus di PR sebelumnya
     });
   }
 
+  // Fungsi untuk mendapatkan lokasi pengguna (sama persis dengan DailyPrayerTimesScreen)
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _prayerTimesErrorMessage = 'Layanan lokasi dinonaktifkan.';
+        _isLoadingPrayerTimes = false;
+        _currentLocationString = 'Layanan lokasi dinonaktifkan.';
+      });
+      return null;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _prayerTimesErrorMessage = 'Izin lokasi ditolak.';
+          _isLoadingPrayerTimes = false;
+          _currentLocationString = 'Izin lokasi ditolak.';
+        });
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _prayerTimesErrorMessage =
+            'Izin lokasi ditolak secara permanen. Mohon aktifkan di pengaturan aplikasi.';
+        _isLoadingPrayerTimes = false;
+        _currentLocationString = 'Izin lokasi ditolak secara permanen.';
+      });
+      return null;
+    }
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        _currentLocationString =
+            'Lokasi: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+      });
+      return position;
+    } catch (e) {
+      setState(() {
+        _prayerTimesErrorMessage = 'Gagal mendapatkan lokasi: $e';
+        _isLoadingPrayerTimes = false;
+        _currentLocationString = 'Gagal mendapatkan lokasi.';
+      });
+      return null;
+    }
+  }
+
+  // Fungsi untuk mengambil waktu sholat dari API
+  Future<void> _fetchPrayerTimesFromApi() async {
+    setState(() {
+      _isLoadingPrayerTimes = true;
+      _prayerTimesErrorMessage = '';
+      _apiPrayerTimes = {}; // Bersihkan data sebelumnya
+    });
+
+    Position? position = await _getCurrentLocation();
+    if (position == null) {
+      // Error message sudah diset oleh _getCurrentLocation
+      return;
+    }
+
+    final double latitude = position.latitude;
+    final double longitude = position.longitude;
+    final String method = '5'; // Method calculation (e.g., Kemenag RI)
+    final String date = DateFormat('dd-MM-yyyy').format(DateTime.now());
+
+    final url = Uri.parse(
+      'http://api.aladhan.com/v1/timings/$date?latitude=$latitude&longitude=$longitude&method=$method',
+    );
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['code'] == 200 && data['status'] == 'OK') {
+          setState(() {
+            _apiPrayerTimes = Map<String, String>.from(data['data']['timings']);
+            _isLoadingPrayerTimes = false;
+            _calculateNextPrayer(); // Hitung ulang setelah data baru didapat
+          });
+        } else {
+          setState(() {
+            _prayerTimesErrorMessage =
+                'Gagal mengambil data sholat: ${data['status']}';
+            _isLoadingPrayerTimes = false;
+          });
+        }
+      } else {
+        setState(() {
+          _prayerTimesErrorMessage =
+              'Gagal terhubung ke server API. Status Code: ${response.statusCode}';
+          _isLoadingPrayerTimes = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _prayerTimesErrorMessage = 'Terjadi kesalahan jaringan: $e';
+        _isLoadingPrayerTimes = false;
+      });
+    }
+  }
+
+  // Modifikasi fungsi _calculateNextPrayer untuk menggunakan _apiPrayerTimes
   void _calculateNextPrayer() {
+    if (_apiPrayerTimes.isEmpty) {
+      setState(() {
+        _nextPrayerName = 'Tidak Ada Data Sholat';
+        _nextPrayerTime = '--:--';
+        _timeUntilNextPrayer = Duration.zero;
+      });
+      return;
+    }
+
     final now = DateTime.now();
     DateTime? nextPrayerDateTime;
-    String nextPrayerName = 'Loading...';
+    String nextPrayerName = 'Tidak Ada Sholat Berikutnya';
 
+    // Urutan sholat (pastikan sesuai dengan kunci di API, biasanya Huruf Besar)
     final List<String> prayerOrder = [
-      'Fajar',
+      'Fajr',
       'Sunrise',
-      'Duhur',
-      'Asar',
+      'Dhuhr',
+      'Asr',
       'Maghrib',
-      'Isya',
-      'subuh',
+      'Isha',
+      // 'Imsak', // Imsak dan Midnight tidak selalu dianggap sholat berikutnya
+      // 'Midnight',
     ];
 
+    Duration shortestDuration = Duration(
+      days: 365,
+    ); // Inisialisasi dengan durasi sangat panjang
+
     for (var prayer in prayerOrder) {
-      if (_prayerTimes.containsKey(prayer)) {
-        final timeString = _prayerTimes[prayer]!;
-        final parts = timeString.split(':');
-        if (parts.length == 2) {
-          final hour = int.tryParse(parts[0]);
-          final minute = int.tryParse(parts[1]);
+      if (_apiPrayerTimes.containsKey(prayer)) {
+        final timeString = _apiPrayerTimes[prayer]!;
+
+        // Aladhan API kadang menyertakan (IST) atau timezone lain. Kita pisahkan.
+        String cleanedTimeString = timeString.split(' ')[0];
+        final cleanedParts = cleanedTimeString.split(':');
+
+        if (cleanedParts.length == 2) {
+          final hour = int.tryParse(cleanedParts[0]);
+          final minute = int.tryParse(cleanedParts[1]);
 
           if (hour != null && minute != null) {
-            final prayerTime = DateTime(
+            DateTime prayerTime = DateTime(
               now.year,
               now.month,
               now.day,
@@ -89,26 +224,64 @@ class _HomeScreenState extends State<HomeScreen> {
               minute,
             );
 
-            if (prayerTime.isAfter(now)) {
+            // Jika waktu sholat sudah lewat hari ini, cek untuk besok
+            if (prayerTime.isBefore(now)) {
+              prayerTime = prayerTime.add(const Duration(days: 1));
+            }
+
+            final duration = prayerTime.difference(now);
+
+            if (!duration.isNegative && duration < shortestDuration) {
+              shortestDuration = duration;
               nextPrayerDateTime = prayerTime;
-              nextPrayerName = prayer;
-              break;
+              nextPrayerName = _getIndonesianPrayerName(
+                prayer,
+              ); // Terjemahkan nama sholat
             }
           }
         }
       }
     }
 
-    if (nextPrayerDateTime != null) {
-      _timeUntilNextPrayer = nextPrayerDateTime.difference(now);
-      _nextPrayerName = nextPrayerName;
-      _nextPrayerTime = DateFormat('HH:mm:').format(nextPrayerDateTime);
-    } else {
-      _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
-      _nextPrayerTime = '--:--';
-      _timeUntilNextPrayer = Duration.zero;
+    setState(() {
+      if (nextPrayerDateTime != null) {
+        _timeUntilNextPrayer = shortestDuration;
+        _nextPrayerName = nextPrayerName;
+        _nextPrayerTime = DateFormat(
+          'HH:mm',
+        ).format(nextPrayerDateTime); // Format tanpa detik
+      } else {
+        // Ini akan terjadi jika semua sholat hari ini sudah lewat dan tidak ada untuk besok (jarang)
+        // atau jika data API tidak valid.
+        _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
+        _nextPrayerTime = '--:--';
+        _timeUntilNextPrayer = Duration.zero;
+      }
+    });
+  }
+
+  // Fungsi pembantu untuk terjemahan nama sholat
+  String _getIndonesianPrayerName(String englishName) {
+    switch (englishName) {
+      case 'Fajr':
+        return 'Subuh';
+      case 'Dhuhr':
+        return 'Dzuhur';
+      case 'Asr':
+        return 'Ashar';
+      case 'Maghrib':
+        return 'Maghrib';
+      case 'Isha':
+        return 'Isya';
+      case 'Sunrise':
+        return 'Terbit';
+      case 'Imsak':
+        return 'Imsak';
+      case 'Midnight':
+        return 'Tengah Malam';
+      default:
+        return englishName;
     }
-    setState(() {});
   }
 
   @override
@@ -129,115 +302,179 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Icon(Icons.location_on, color: Colors.white),
                 Text(
-                  'Asrama UIM',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  _currentLocationString, // Menampilkan lokasi dari state
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ],
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              _currentGregorianDate,
-              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
-            ),
-            Text(
-              _currentHijriDate,
-              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _currentTime,
-              style: TextStyle(
-                fontSize: 72,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
-              ),
-            ),
-            const SizedBox(height: 20),
+      body:
+          _isLoadingPrayerTimes && _apiPrayerTimes.isEmpty
+              ? const Center(
+                child: CircularProgressIndicator(),
+              ) // Tampilkan loading spinner
+              : _prayerTimesErrorMessage.isNotEmpty
+              ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 40,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _prayerTimesErrorMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red, fontSize: 16),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _fetchPrayerTimesFromApi,
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      _currentGregorianDate,
+                      style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                    ),
+                    // _currentHijriDate tidak lagi ditampilkan di sini
+                    const SizedBox(height: 20),
+                    Text(
+                      _currentTime,
+                      style: TextStyle(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.blueAccent.withAlpha((255 * 0.1).round()),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey,
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Waktu sholat berikutnya:',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _nextPrayerName,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent.shade700,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent.withAlpha((255 * 0.1).round()),
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Waktu sholat berikutnya:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _nextPrayerName,
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueAccent.shade700,
+                            ),
+                          ),
+                          Text(
+                            '$_nextPrayerTime WIB',
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Colors.blueAccent.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            // Format waktu tersisa
+                            'Tersisa ${NumberFormat('00').format(_timeUntilNextPrayer.inHours % 24)}:'
+                            '${NumberFormat('00').format(_timeUntilNextPrayer.inMinutes % 60)}:'
+                            '${NumberFormat('00').format(_timeUntilNextPrayer.inSeconds % 60)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$_nextPrayerTime WIB',
-                    style: TextStyle(
-                      fontSize: 24,
-                      color: Colors.blueAccent.shade700,
+                    const SizedBox(height: 30),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Jadwal sholat Hari ini ',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Tersisa ${NumberFormat('00').format(_timeUntilNextPrayer.inHours % 24)}:'
-                    '${NumberFormat('00').format(_timeUntilNextPrayer.inMinutes % 60)}:'
-                    '${NumberFormat('00').format(_timeUntilNextPrayer.inSeconds % 60)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Jadwal sholat Hari ini ',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                    const SizedBox(height: 15),
+                    // Tampilkan daftar waktu sholat dari API
+                    ..._buildPrayerTimeList(
+                      _apiPrayerTimes,
+                    ), // Menggunakan _apiPrayerTimes
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 15),
-            ..._prayerTimes.entries.map((entry) {
-              final isNext = _nextPrayerName == entry.key;
-              return _buildPrayerTimeItem(
-                entry.key,
-                entry.value,
-                isNext: isNext,
-              );
-            }),
-
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
     );
+  }
+
+  // Fungsi _buildPrayerTimeItem dan _getIndonesianPrayerName tetap sama
+  List<Widget> _buildPrayerTimeList(Map<String, dynamic> timings) {
+    // Pastikan urutan nama sholat sesuai dengan yang kamu inginkan untuk ditampilkan
+    // dan juga sesuai dengan key yang ada di response API (contoh: Fajr, Dhuhr)
+    final List<String> prayerNames = [
+      'Fajr',
+      'Sunrise',
+      'Dhuhr',
+      'Asr',
+      'Maghrib',
+      'Isha',
+      'Imsak',
+      'Midnight',
+    ];
+    List<Widget> items = [];
+
+    for (var name in prayerNames) {
+      if (timings.containsKey(name)) {
+        items.add(
+          _buildPrayerTimeItem(
+            name, // Gunakan nama asli dari API
+            timings[name]!, // Ambil waktu dari map
+            isNext:
+                _getIndonesianPrayerName(name) ==
+                _nextPrayerName, // Periksa kecocokan dengan nama yang sudah diterjemahkan
+          ),
+        );
+      }
+    }
+    return items;
   }
 
   Widget _buildPrayerTimeItem(
@@ -245,33 +482,9 @@ class _HomeScreenState extends State<HomeScreen> {
     String time, {
     bool isNext = false,
   }) {
-    String displayPrayerName = prayerName;
-    switch (prayerName) {
-      case 'fajar':
-        displayPrayerName = 'subuh';
-        break;
-      case 'sunrise':
-        displayPrayerName = 'terbit';
-        break;
-      case 'duhur':
-        displayPrayerName = 'duhur';
-        break;
-      case 'ashar':
-        displayPrayerName = 'ashar';
-        break;
-      case 'maghrib':
-        displayPrayerName = 'maghrib';
-        break;
-      case 'isya':
-        displayPrayerName = 'isya';
-        break;
-      case 'imsak':
-        displayPrayerName = 'imsak';
-        break;
-      case 'midnight':
-        displayPrayerName = 'midnight';
-        break;
-    }
+    String displayPrayerName = _getIndonesianPrayerName(
+      prayerName,
+    ); // Terjemahkan nama untuk display
 
     return Card(
       elevation: isNext ? 4 : 1,
@@ -292,7 +505,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Text(
-              time,
+              // Pastikan format waktu dari API sudah sesuai,
+              // Aladhan API biasanya sudah HH:mm, tapi kadang ada (IST)
+              // Kita ambil bagian HH:mm saja.
+              time.split(
+                ' ',
+              )[0], // Ambil hanya bagian waktu, pisahkan jika ada (IST) dll.
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: isNext ? FontWeight.bold : FontWeight.normal,

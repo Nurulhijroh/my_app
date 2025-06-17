@@ -216,7 +216,8 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                     ),
 
                     Text(
-                      'Lokasi: ${_prayerData!['meta']['latitude']}, ${_prayerData!['meta']['longitude']}',
+                      // Ini adalah line yang berisi string lokasi
+                      _currentLocationString, // Ganti ini dari yang sebelumnya `Lokasi: ...`
                       style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
