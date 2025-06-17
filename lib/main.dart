@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:my_app/screens/home_screen.dart';
 import 'package:my_app/screens/settings_screen.dart';
-import 'package:my_app/screens/daily_prayer.dart';
+import 'package:my_app/screens/daily_prayer_times_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
