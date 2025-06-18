@@ -197,7 +197,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tanggal Gregorian: ${_prayerData!['date']['readable'] ?? 'N/A'}',
+                      'Tanggal Masehi: ${_prayerData!['date']['readable'] ?? 'N/A'}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

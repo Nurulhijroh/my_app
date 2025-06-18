@@ -4,9 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:my_app/main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,13 +16,14 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentGregorianDate = '';
 
   String _currentTime = '';
-  String _nextPrayerName = 'Tidak Ada Sholat Berikutnya';
+  String _nextPrayerName = '';
   String _nextPrayerTime = '--:--';
   Duration _timeUntilNextPrayer = Duration.zero;
 
   Map<String, String> _apiPrayerTimes = {};
   bool _isLoadingPrayerTimes = true;
   String _prayerTimesErrorMessage = '';
+
   String _currentLocationString = 'Mendeteksi lokasi...';
 
   Timer? _timer;
@@ -192,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     Duration shortestDuration = Duration(days: 365);
+
     for (var prayer in prayerOrder) {
       if (_apiPrayerTimes.containsKey(prayer)) {
         final timeString = _apiPrayerTimes[prayer]!;
@@ -412,7 +411,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 15),
 
                     ..._buildPrayerTimeList(_apiPrayerTimes),
-
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -420,10 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Fungsi _buildPrayerTimeItem dan _getIndonesianPrayerName tetap sama
   List<Widget> _buildPrayerTimeList(Map<String, dynamic> timings) {
-    // Pastikan urutan nama sholat sesuai dengan yang kamu inginkan untuk ditampilkan
-    // dan juga sesuai dengan key yang ada di response API (contoh: Fajr, Dhuhr)
     final List<String> prayerNames = [
       'Fajr',
       'Sunrise',
@@ -440,11 +435,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (timings.containsKey(name)) {
         items.add(
           _buildPrayerTimeItem(
-            name, // Gunakan nama asli dari API
-            timings[name]!, // Ambil waktu dari map
-            isNext:
-                _getIndonesianPrayerName(name) ==
-                _nextPrayerName, // Periksa kecocokan dengan nama yang sudah diterjemahkan
+            name,
+            timings[name]!,
+            isNext: _getIndonesianPrayerName(name) == _nextPrayerName,
           ),
         );
       }
@@ -457,9 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String time, {
     bool isNext = false,
   }) {
-    String displayPrayerName = _getIndonesianPrayerName(
-      prayerName,
-    ); // Terjemahkan nama untuk display
+    String displayPrayerName = _getIndonesianPrayerName(prayerName);
 
     return Card(
       elevation: isNext ? 4 : 1,
@@ -480,12 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Text(
-              // Pastikan format waktu dari API sudah sesuai,
-              // Aladhan API biasanya sudah HH:mm, tapi kadang ada (IST)
-              // Kita ambil bagian HH:mm saja.
-              time.split(
-                ' ',
-              )[0], // Ambil hanya bagian waktu, pisahkan jika ada (IST) dll.
+              time.split(' ')[0],
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
