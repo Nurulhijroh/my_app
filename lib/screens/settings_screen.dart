@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
-// import 'package:my_app/screens/settings_screen.dart'; // <--- BARIS INI HAPUS, INI IMPORT DIRI SENDIRI
-import 'package:provider/provider.dart'; // <--- TAMBAH INI
-import 'package:my_app/theme_provider.dart'; // <--- TAMBAH INI (pastikan path benar)
 
-// PERHATIKAN: Saya akan mengubah nama kelas dari SettingScreen menjadi SettingsScreen
-// Sesuai dengan standar penamaan kelas di Dart/Flutter (PascalCase).
-// Juga karena Anda mengimpor 'settings_screen.dart' yang mungkin merujuk pada dirinya sendiri
-// atau membuat kebingungan jika ada file lain dengan nama serupa.
+import 'package:provider/provider.dart';
+import 'package:my_app/theme_provider.dart';
+
 class SettingsScreen extends StatelessWidget {
-  // <--- UBAH NAMA KELAS DI SINI
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // <--- TAMBAH BAGIAN CONSUMER INI UNTUK MENGAKSES THEMEPROVIDER
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return Scaffold(
@@ -25,29 +19,21 @@ class SettingsScreen extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-            backgroundColor: Colors.blueAccent, // Warna app bar konsisten
-            iconTheme: const IconThemeData(
-              color: Colors.white,
-            ), // Warna icon back
+            centerTitle: true,
+            backgroundColor: Colors.blueAccent,
+            iconTheme: const IconThemeData(color: Colors.white),
           ),
           body: ListView(
-            // <--- UBAH DARI Center ke ListView
             padding: const EdgeInsets.all(16.0),
             children: [
-              // Pengaturan Tema: Ini adalah bagian yang Anda inginkan
               ListTile(
                 title: const Text('Mode Tema'),
                 subtitle: Text(_getThemeModeText(themeProvider.themeMode)),
                 trailing: DropdownButton<ThemeMode>(
-                  value:
-                      themeProvider
-                          .themeMode, // Menampilkan nilai tema saat ini
+                  value: themeProvider.themeMode,
                   onChanged: (ThemeMode? newValue) {
-                    // Dipanggil saat pengguna memilih opsi baru
                     if (newValue != null) {
-                      themeProvider.setThemeMode(
-                        newValue,
-                      ); // Mengubah tema melalui ThemeProvider
+                      themeProvider.setThemeMode(newValue);
                     }
                   },
                   items: const <DropdownMenuItem<ThemeMode>>[
@@ -66,8 +52,7 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(), // Garis pemisah
-              // Anda bisa menambahkan pengaturan lain di bawah sini
+              const Divider(),
               ListTile(
                 title: const Text('Pengaturan Notifikasi'),
                 subtitle: const Text('Kelola pengaturan notifikasi Adzan'),
@@ -85,9 +70,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   showAboutDialog(
                     context: context,
-                    applicationName: 'Digital Falak',
+                    applicationName: 'Waktu Sholat',
                     applicationVersion: '1.0.0',
-                    applicationLegalese: '© 2024 Your Company Name',
+                    applicationLegalese: '© 2025 @_',
                     children: [
                       const Text(
                         'Aplikasi ini membantu Anda melacak waktu sholat.',
@@ -100,11 +85,9 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
-    ); // <--- AKHIR DARI CONSUMER
+    );
   }
 
-  // <--- TAMBAH FUNGSI HELPER INI
-  // Fungsi pembantu untuk mendapatkan teks yang sesuai dengan ThemeMode
   String _getThemeModeText(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.system:

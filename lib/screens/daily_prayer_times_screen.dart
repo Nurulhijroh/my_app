@@ -28,12 +28,10 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
     super.dispose();
   }
 
-  // Fungsi baru untuk mendapatkan lokasi pengguna
   Future<Position?> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       setState(() {
@@ -67,8 +65,6 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
       return null;
     }
 
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -94,9 +90,8 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
       _errorMessage = '';
     });
 
-    Position? position = await _getCurrentLocation(); // <<< Panggil fungsi ini
+    Position? position = await _getCurrentLocation();
     if (position == null) {
-      // Error message will be set by _getCurrentLocation
       return;
     }
 
@@ -146,9 +141,10 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Jadwal Sholat Harian',
+          'Jadwal Sholat ',
           style: TextStyle(color: Colors.white),
         ),
+        centerTitle: true,
         backgroundColor: Colors.blueAccent,
         actions: [
           IconButton(
@@ -216,8 +212,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                     ),
 
                     Text(
-                      // Ini adalah line yang berisi string lokasi
-                      _currentLocationString, // Ganti ini dari yang sebelumnya `Lokasi: ...`
+                      _currentLocationString,
                       style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
