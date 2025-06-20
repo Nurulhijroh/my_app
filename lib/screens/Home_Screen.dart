@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 72,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
+                        color: Color(0xFF006C4C),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -372,14 +372,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blueAccent.shade700,
+                              color: const Color.fromARGB(255, 40, 100, 43),
                             ),
                           ),
                           Text(
                             '$_nextPrayerTime WIB',
                             style: TextStyle(
                               fontSize: 24,
-                              color: Colors.blueAccent.shade700,
+                              color: const Color.fromARGB(255, 43, 109, 47),
                             ),
                           ),
                           const SizedBox(height: 10),

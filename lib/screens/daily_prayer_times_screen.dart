@@ -259,7 +259,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
+                      color: Color(0xFF006C4C),
                     ),
                   ),
                 ],
