@@ -16,7 +16,7 @@ class SettingsScreen extends StatelessWidget {
               'Pengaturan',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF006C4C),
               ),
             ),
             centerTitle: true,

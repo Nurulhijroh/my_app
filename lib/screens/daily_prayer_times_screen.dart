@@ -145,7 +145,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Color(0xFF006C4C),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
