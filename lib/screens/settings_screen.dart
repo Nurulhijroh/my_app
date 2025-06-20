@@ -16,11 +16,11 @@ class SettingsScreen extends StatelessWidget {
               'Pengaturan',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF006C4C),
+                color: Colors.white,
               ),
             ),
             centerTitle: true,
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Color(0xFF006C4C),
             iconTheme: const IconThemeData(color: Colors.white),
           ),
           body: ListView(
