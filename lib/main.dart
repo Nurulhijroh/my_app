@@ -27,21 +27,70 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          title: 'Pengingat Asrama',
+          title: 'Prayer Time',
           theme: ThemeData(
-            primarySwatch: Colors.blue,
-            brightness: Brightness.light,
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF006C4C),
+              brightness: Brightness.light,
+            ).copyWith(secondary: const Color(0xFFEBC15F)),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.blueAccent,
+              backgroundColor: Color(0xFF006C4C),
               foregroundColor: Colors.white,
+              titleTextStyle: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            cardTheme: CardTheme(
+              surfaceTintColor: Colors.green.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4.0,
+            ),
+            bottomNavigationBarTheme: BottomNavigationBarThemeData(
+              selectedItemColor: const Color(0xFF006C4C),
+              unselectedItemColor: Colors.grey.shade600,
+              backgroundColor: Colors.white,
+            ),
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(color: Colors.grey.shade900),
+              bodyMedium: TextStyle(color: Colors.grey.shade800),
             ),
           ),
           darkTheme: ThemeData(
-            primarySwatch: Colors.blueGrey,
-            brightness: Brightness.dark,
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF004D36),
+              brightness: Brightness.dark,
+            ).copyWith(secondary: const Color(0xFFD4AF37)),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.blueGrey,
+              backgroundColor: Color(0xFF004D36),
               foregroundColor: Colors.white,
+              titleTextStyle: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            cardTheme: CardTheme(
+              surfaceTintColor: Colors.green.shade900,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4.0,
+            ),
+            bottomNavigationBarTheme: BottomNavigationBarThemeData(
+              selectedItemColor: const Color(0xFFD4AF37),
+              unselectedItemColor: Colors.grey.shade400,
+              backgroundColor: Colors.black,
+            ),
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(color: Colors.grey.shade100),
+              bodyMedium: TextStyle(color: Colors.grey.shade200),
             ),
           ),
 
@@ -99,8 +148,11 @@ class _AppShellState extends State<AppShell> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor:
+            Theme.of(context).brightness == Brightness.light
+                ? Colors.grey
+                : Colors.grey.shade400,
         onTap: _onItemTapped,
       ),
     );
