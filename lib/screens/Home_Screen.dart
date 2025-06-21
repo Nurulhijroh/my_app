@@ -265,6 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -272,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
-        backgroundColor: Color(0xFF006C4C),
+        backgroundColor: ColorScheme.primary,
         elevation: 0,
         actions: [
           Padding(
@@ -335,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 72,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF006C4C),
+                        color: ColorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -346,11 +347,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         horizontal: 24,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withAlpha((255 * 0.1).round()),
+                        color: ColorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey,
+                            color: Colors.grey.withOpacity(0.3),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: Offset(0, 3),
@@ -363,7 +364,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             'Waktu sholat berikutnya:',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey[800],
+                              color:
+                                  Theme.of(context).textTheme.bodyMedium?.color,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -372,14 +374,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: const Color.fromARGB(255, 40, 100, 43),
+                              color: ColorScheme.primary,
                             ),
                           ),
                           Text(
                             '$_nextPrayerTime WIB',
                             style: TextStyle(
                               fontSize: 24,
-                              color: const Color.fromARGB(255, 43, 109, 47),
+                              color: ColorScheme.primary,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -451,10 +453,14 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isNext = false,
   }) {
     String displayPrayerName = _getIndonesianPrayerName(prayerName);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       elevation: isNext ? 4 : 1,
-      color: isNext ? Colors.blueAccent.shade100 : Colors.white,
+      color:
+          isNext
+              ? colorScheme.primary.withOpacity(0.1)
+              : Theme.of(context).cardTheme.color,
       margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
@@ -467,7 +473,10 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-                color: isNext ? Colors.blueAccent.shade700 : Colors.black87,
+                color:
+                    isNext
+                        ? colorScheme.primary
+                        : Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
             Text(
@@ -475,7 +484,10 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-                color: isNext ? Colors.blueAccent.shade700 : Colors.black87,
+                color:
+                    isNext
+                        ? colorScheme.primary
+                        : Theme.of(context).textTheme.bodyMedium?.color,
               ),
             ),
           ],
