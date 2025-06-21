@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _currentGregorianDate = '';
-
+  String _currentHijriDate = '';
   String _currentTime = '';
   String _nextPrayerName = '';
   String _nextPrayerTime = '--:--';
@@ -141,6 +141,16 @@ class _HomeScreenState extends State<HomeScreen> {
         if (data['code'] == 200 && data['status'] == 'OK') {
           setState(() {
             _apiPrayerTimes = Map<String, String>.from(data['data']['timings']);
+            if (data['data'].containsKey('date') &&
+                data['data']['date'].containsKey('hijri')) {
+              final hijriData = data['data']['date']['hijri'];
+              final hijriDay = hijriData['day'];
+              final hijriMonth = hijriData['month']['ar'];
+              final hijriYear = hijriData['year'];
+              _currentHijriDate = '$hijriDay $hijriMonth $hijriYear H';
+            } else {
+              _currentHijriDate = 'Tanggal Hijriah tidak tersedia';
+            }
             _isLoadingPrayerTimes = false;
             _calculateNextPrayer();
           });
@@ -265,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -273,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
-        backgroundColor: ColorScheme.primary,
+        backgroundColor: colorScheme.primary,
         elevation: 0,
         actions: [
           Padding(
@@ -329,14 +339,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       _currentGregorianDate,
                       style: TextStyle(fontSize: 18, color: Colors.grey[700]),
                     ),
-
+                    const SizedBox(height: 5),
+                    Text(
+                      _currentHijriDate,
+                      style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                    ),
                     const SizedBox(height: 20),
                     Text(
                       _currentTime,
                       style: TextStyle(
                         fontSize: 72,
                         fontWeight: FontWeight.bold,
-                        color: ColorScheme.primary,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -347,11 +361,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         horizontal: 24,
                       ),
                       decoration: BoxDecoration(
-                        color: ColorScheme.surfaceVariant,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withAlpha((255 * 0.3).round()),
                             spreadRadius: 2,
                             blurRadius: 5,
                             offset: Offset(0, 3),
@@ -374,14 +388,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: ColorScheme.primary,
+                              color: colorScheme.primary,
                             ),
                           ),
                           Text(
                             '$_nextPrayerTime WIB',
                             style: TextStyle(
                               fontSize: 24,
-                              color: ColorScheme.primary,
+                              color: colorScheme.primary,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -459,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: isNext ? 4 : 1,
       color:
           isNext
-              ? colorScheme.primary.withOpacity(0.1)
+              ? colorScheme.primary.withAlpha((255 * 0.1).round())
               : Theme.of(context).cardTheme.color,
       margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
