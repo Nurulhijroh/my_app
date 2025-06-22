@@ -420,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
                         ),
                       ),
                     ),
@@ -469,42 +469,49 @@ class _HomeScreenState extends State<HomeScreen> {
     String displayPrayerName = _getIndonesianPrayerName(prayerName);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: isNext ? 4 : 1,
-      color:
-          isNext
-              ? colorScheme.primary.withAlpha((255 * 0.1).round())
-              : Theme.of(context).cardTheme.color,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              displayPrayerName,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-                color:
-                    isNext
-                        ? colorScheme.primary
-                        : Theme.of(context).textTheme.bodyMedium?.color,
+    return InkWell(
+      onTap: () {
+        //print('klik : $displayPrayerName pada pukul $time');
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Card(
+        elevation: isNext ? 4 : 1,
+        color:
+            isNext
+                ? colorScheme.primary.withAlpha((255 * 0.1).round())
+                : Theme.of(context).cardTheme.color,
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                displayPrayerName,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
+                  color:
+                      isNext
+                          ? colorScheme.primary
+                          : Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
-            ),
-            Text(
-              time.split(' ')[0],
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-                color:
-                    isNext
-                        ? colorScheme.primary
-                        : Theme.of(context).textTheme.bodyMedium?.color,
+              Text(
+                time.split(' ')[0],
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
+                  color:
+                      isNext
+                          ? colorScheme.primary
+                          : Theme.of(context).textTheme.bodyMedium?.color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
