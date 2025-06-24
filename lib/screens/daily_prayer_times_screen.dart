@@ -193,7 +193,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tanggal Masehi: ${_prayerData!['date']['readable'] ?? 'N/A'}',
+                      ' ${_prayerData!['date']['readable'] ?? 'N/A'}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -201,7 +201,7 @@ class _DailyPrayerTimesScreenState extends State<DailyPrayerTimesScreen> {
                     ),
 
                     Text(
-                      'Tanggal Hijriah: '
+                      ' '
                       '${_prayerData!['date']['hijri']?['day'] ?? 'N/A'} '
                       '${_prayerData!['date']['hijri']?['month']?['en'] ?? 'N/A'} '
                       '${_prayerData!['date']['hijri']?['year'] ?? 'N/A'} H',
